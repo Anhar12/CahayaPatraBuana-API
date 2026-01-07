@@ -8,6 +8,6 @@ const PORT = process.env.PORT || 5000
   await initDb()
 
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`)
+    console.log(`🚀 Server running on ${PORT}`)
   })
 })()
