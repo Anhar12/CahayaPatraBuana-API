@@ -7,7 +7,9 @@ exports.stats = async (req, res) => {
       COUNT(*) AS total_data,
       COALESCE(SUM(elpiji_3kg), 0) + COALESCE(SUM(elpiji_12kg), 0) AS total_elpiji,
       COALESCE(SUM(elpiji_3kg), 0) AS total_3kg,
-      COALESCE(SUM(elpiji_12kg), 0) AS total_12kg
+      COALESCE(SUM(elpiji_12kg), 0) AS total_12kg,
+      4 AS truck,
+      1 AS pickup
     FROM elpiji;
   `)
 
