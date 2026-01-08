@@ -41,7 +41,7 @@ async function initDb() {
     )
 
     if (total === 0) {
-      const hashed = await bcrypt.hash("123", 10)
+      const hashed = await bcrypt.hash(process.env.DEFAULT_ADMIN_PASSWORD, 10)
       await conn.query(
         "INSERT INTO users (username, password) VALUES (?, ?)",
         ["admin", hashed]
