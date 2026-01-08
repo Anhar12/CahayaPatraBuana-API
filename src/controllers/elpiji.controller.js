@@ -2,15 +2,7 @@ const db = require("../config/db")
 const { success, error } = require("../utils/response")
 
 exports.getAll = async (req, res) => {
-  const page = parseInt(req.query.page) || 1
-  const limit = parseInt(req.query.limit) || 10
   const search = req.query.search || ""
-
-  if (page < 1 || limit < 1) {
-    return error(res, "Page dan limit tidak valid")
-  }
-
-  const offset = (page - 1) * limit
 
   const whereClause = search
     ? `WHERE e.pangkalan LIKE ? OR e.pemilik LIKE ? OR e.alamat LIKE ?`
@@ -20,20 +12,6 @@ exports.getAll = async (req, res) => {
     ? [`%${search}%`, `%${search}%`, `%${search}%`]
     : []
 
-  const [[{ total }]] = await db.query(
-    `SELECT COUNT(*) AS total FROM elpiji e ${whereClause}`,
-    searchParams
-  )
-
-  if (total > 0 && offset >= total) {
-    return success(res, [], "Page di luar jangkauan", {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    })
-  }
-
   const [rows] = await db.query(
     `
     SELECT e.*, u.username
@@ -41,19 +19,12 @@ exports.getAll = async (req, res) => {
     JOIN users u ON u.id = e.user_id
     ${whereClause}
     ORDER BY e.created_at DESC
-    LIMIT ? OFFSET ?
     `,
-    [...searchParams, limit, offset]
+    searchParams
   )
 
   return success(res, {
     data: rows,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
   })
 }
 
