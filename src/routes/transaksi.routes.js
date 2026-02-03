@@ -9,5 +9,6 @@ router.post("/", auth, transaksiController.create)
 router.put("/:id", auth, transaksiController.update)
 router.put("/:id/complete", auth, transaksiController.complete)
 router.delete("/:id", auth, transaksiController.remove)
+router.get("/export", auth, transaksiController.exportExcel)
 
 module.exports = router

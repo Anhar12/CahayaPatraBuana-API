@@ -1,4 +1,5 @@
 const db = require("../config/db")
+const ExcelJS = require("exceljs")
 const { success, error } = require("../utils/response")
 
 // GET ALL TRANSAKSI
@@ -291,4 +292,86 @@ exports.remove = async (req, res) => {
   } finally {
     conn.release()
   }
+}
+
+exports.exportExcel = async (req, res) => {
+  const search = req.query.search || ""
+
+  const whereClause = search
+    ? `WHERE 
+        pangkalan LIKE ? 
+        OR pemilik LIKE ? 
+        OR nama_driver LIKE ? 
+        OR status LIKE ?`
+    : ""
+
+  const params = search
+    ? [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]
+    : []
+
+  const [rows] = await db.query(
+    `
+    SELECT
+      pangkalan,
+      pemilik,
+      nomor,
+      alamat,
+      nama_driver,
+      tanggal,
+      lpg_3kg,
+      lpg_12kg,
+      status,
+      created_at
+    FROM transaksi
+    ${whereClause}
+    ORDER BY tanggal DESC, created_at DESC
+    `,
+    params
+  )
+
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet("Transaksi")
+
+  worksheet.columns = [
+    { header: "Pangkalan", key: "pangkalan", width: 20 },
+    { header: "Pemilik", key: "pemilik", width: 20 },
+    { header: "Nomor", key: "nomor", width: 15 },
+    { header: "Alamat", key: "alamat", width: 30 },
+    { header: "Nama Driver", key: "nama_driver", width: 20 },
+    { header: "Tanggal", key: "tanggal", width: 15 },
+    { header: "LPG 3 KG", key: "lpg_3kg", width: 12 },
+    { header: "LPG 12 KG", key: "lpg_12kg", width: 14 },
+    { header: "Status", key: "status", width: 12 },
+    { header: "Created At", key: "created_at", width: 20 },
+  ]
+
+  worksheet.getRow(1).font = { bold: true }
+  worksheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" }
+
+  rows.forEach((row) => {
+    worksheet.addRow({
+      ...row,
+      tanggal: row.tanggal
+        ? new Date(row.tanggal).toISOString().split("T")[0]
+        : "",
+      created_at: row.created_at
+        ? new Date(row.created_at)
+        : "",
+    })
+  })
+
+  worksheet.getColumn("tanggal").numFmt = "dd-mm-yyyy"
+  worksheet.getColumn("created_at").numFmt = "dd-mm-yyyy hh:mm:ss"
+
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  )
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=transaksi.xlsx"
+  )
+
+  await workbook.xlsx.write(res)
+  res.end()
 }
