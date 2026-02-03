@@ -346,22 +346,24 @@ exports.exportExcel = async (req, res) => {
   ]
 
   worksheet.getRow(1).font = { bold: true }
-  worksheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" }
 
   rows.forEach((row) => {
     worksheet.addRow({
       ...row,
       tanggal: row.tanggal
-        ? new Date(row.tanggal).toISOString().split("T")[0]
-        : "",
+        ? new Date(row.tanggal)
+        : null,
       created_at: row.created_at
         ? new Date(row.created_at)
-        : "",
+        : null,
     })
   })
 
   worksheet.getColumn("tanggal").numFmt = "dd-mm-yyyy"
   worksheet.getColumn("created_at").numFmt = "dd-mm-yyyy hh:mm:ss"
+
+  // 🔑 INI KUNCI ANTI KORUP
+  const buffer = await workbook.xlsx.writeBuffer()
 
   res.setHeader(
     "Content-Type",
@@ -371,7 +373,7 @@ exports.exportExcel = async (req, res) => {
     "Content-Disposition",
     "attachment; filename=transaksi.xlsx"
   )
+  res.setHeader("Content-Length", buffer.length)
 
-  await workbook.xlsx.write(res)
-  res.end()
+  res.end(buffer)
 }
