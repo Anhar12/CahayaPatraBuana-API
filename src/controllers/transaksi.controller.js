@@ -333,6 +333,7 @@ exports.exportExcel = async (req, res) => {
   const worksheet = workbook.addWorksheet("Transaksi")
 
   worksheet.columns = [
+    { header: "No", key: "no", width: 6 },
     { header: "Pangkalan", key: "pangkalan", width: 20 },
     { header: "Pemilik", key: "pemilik", width: 20 },
     { header: "Nomor HP", key: "nomor", width: 15 },
@@ -345,24 +346,35 @@ exports.exportExcel = async (req, res) => {
     { header: "Created At", key: "created_at", width: 20 },
   ]
 
-  worksheet.getRow(1).font = { bold: true }
+  const headerRow = worksheet.getRow(1)
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } }
+    cell.alignment = { vertical: "middle", horizontal: "center" }
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF16A34A" },
+    }
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    }
+  })
 
-  rows.forEach((row) => {
+  rows.forEach((row, index) => {
     worksheet.addRow({
+      no: index + 1,
       ...row,
-      tanggal: row.tanggal
-        ? new Date(row.tanggal)
-        : null,
-      created_at: row.created_at
-        ? new Date(row.created_at)
-        : null,
+      tanggal: row.tanggal ? new Date(row.tanggal) : null,
+      created_at: row.created_at ? new Date(row.created_at) : null,
     })
   })
 
   worksheet.getColumn("tanggal").numFmt = "dd-mm-yyyy"
   worksheet.getColumn("created_at").numFmt = "dd-mm-yyyy hh:mm:ss"
 
-  // 🔑 INI KUNCI ANTI KORUP
   const buffer = await workbook.xlsx.writeBuffer()
 
   res.setHeader(
