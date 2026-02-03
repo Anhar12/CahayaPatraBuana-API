@@ -129,7 +129,7 @@ exports.create = async (req, res) => {
     }
 
     await conn.commit()
-    return success(res, null, "Transaksi berhasil dibuat (Waiting)")
+    return success(res, null, "Transaksi berhasil dibuat")
   } catch (err) {
     await conn.rollback()
     throw err
@@ -241,9 +241,54 @@ exports.complete = async (req, res) => {
 }
 
 exports.remove = async (req, res) => {
-  await db.query(
-    `DELETE FROM transaksi WHERE id = ?`,
-    [req.params.id]
-  )
-  return success(res, null, "Transaksi berhasil dihapus")
+  const conn = await db.getConnection()
+  const { id } = req.params
+
+  try {
+    await conn.beginTransaction()
+
+    // ambil transaksi + lock
+    const [[trx]] = await conn.query(
+      `SELECT * FROM transaksi WHERE id = ? FOR UPDATE`,
+      [id]
+    )
+
+    if (!trx) {
+      await conn.rollback()
+      return error(res, "Transaksi tidak ditemukan")
+    }
+
+    if (trx.status === "Waiting") {
+      if (trx.lpg_3kg > 0) {
+        await conn.query(
+          `UPDATE storage SET jumlah = IFNULL(jumlah,0) + ? WHERE nama = 'lpg 3kg'`,
+          [trx.lpg_3kg]
+        )
+      }
+
+      if (trx.lpg_12kg > 0) {
+        await conn.query(
+          `UPDATE storage SET jumlah = IFNULL(jumlah,0) + ? WHERE nama = 'lpg 12kg'`,
+          [trx.lpg_12kg]
+        )
+      }
+    }
+
+    await conn.query(
+      `DELETE FROM transaksi WHERE id = ?`,
+      [id]
+    )
+
+    await conn.commit()
+    return success(
+      res,
+      null,
+      "Transaksi berhasil dihapus"
+    )
+  } catch (err) {
+    await conn.rollback()
+    throw err
+  } finally {
+    conn.release()
+  }
 }
