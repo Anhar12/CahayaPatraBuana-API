@@ -335,7 +335,7 @@ exports.exportExcel = async (req, res) => {
   worksheet.columns = [
     { header: "Pangkalan", key: "pangkalan", width: 20 },
     { header: "Pemilik", key: "pemilik", width: 20 },
-    { header: "Nomor", key: "nomor", width: 15 },
+    { header: "Nomor HP", key: "nomor", width: 15 },
     { header: "Alamat", key: "alamat", width: 30 },
     { header: "Nama Driver", key: "nama_driver", width: 20 },
     { header: "Tanggal", key: "tanggal", width: 15 },
